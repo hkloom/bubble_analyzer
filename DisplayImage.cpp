@@ -1,8 +1,29 @@
 #include <stdio.h>
+#include <iostream>
 #include <opencv2/opencv.hpp>
 #include <Magick++.h>
+#include <string>
 
 using namespace cv;
+using namespace std;
+using namespace Magick;
+
+class WatershedSegmenter{
+private:
+    Mat markers;
+public:
+    void setMarkers(cv::Mat& markerImage)
+    {
+        markerImage.convertTo(markers, CV_32S);
+    }
+
+    Mat process(Mat &image)
+    {
+        watershed(image, markers);
+        markers.convertTo(markers,CV_8U);
+        return markers;
+    }
+};
 
 int main(int argc, char** argv ){
 
@@ -16,38 +37,46 @@ int main(int argc, char** argv ){
     mimg.read(argv[1]);
     mimg.magick("png"); // set the "format" attribute of my_image to PNG
     mimg.write("temp.png");
-
-
-    Mat image, gray;
+    Mat image, gray, imgGray, ret;
     image = imread("temp.png", 1);
-    //gray = imread("temp", CV_LOAD_IMAGE_ANYCOLOR | CV_LOAD_IMAGE_ANYDEPTH);
+    cv::Mat blank(image.size(),CV_8U,cv::Scalar(0xFF));
+    cv::Mat dest;
 
     if ( !image.data )
     {
         printf("No image data \n");
         return -1;
     }
+    // Create markers image
+    cv::Mat markers(image.size(),CV_8U,cv::Scalar(-1));
+    //Rect(topleftcornerX, topleftcornerY, width, height);
+    //top rectangle
+    markers(Rect(0,0,image.cols, 5)) = Scalar::all(1);
+    //bottom rectangle
+    markers(Rect(0,image.rows-5,image.cols, 5)) = Scalar::all(1);
+    //left rectangle
+    markers(Rect(0,0,5,image.rows)) = Scalar::all(1);
+    //right rectangle
+    markers(Rect(image.cols-5,0,5,image.rows)) = Scalar::all(1);
+    //centre rectangle
+    int centreW = image.cols/4;
+    int centreH = image.rows/4;
+    markers(Rect((image.cols/2)-(centreW/2),(image.rows/2)-(centreH/2), centreW, centreH)) = Scalar::all(2);
+    markers.convertTo(markers,CV_BGR2GRAY);
+    imshow("markers", markers);
 
-    cvtColor(image, gray, CV_BGR2GRAY);
-    // smooth it, otherwise a lot of false circles may be detected
-    GaussianBlur( gray, gray, Size(9, 9), 2, 2 );
-    vector<Vec3f> circles;
-    HoughCircles(gray, circles, CV_HOUGH_GRADIENT,
-                 2, gray.rows/4, 200, 100 );
-    for( size_t i = 0; i < circles.size(); i++ )
-    {
-         Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
-         int radius = cvRound(circles[i][2]);
-         // draw the circle center
-         circle( image, center, 3, Scalar(0,255,0), -1, 8, 0 );
-         // draw the circle outline
-         circle( image, center, radius, Scalar(0,0,255), 3, 8, 0 );
-    }
+    //Create watershed segmentation object
+    WatershedSegmenter segmenter;
+    segmenter.setMarkers(markers);
+    cv::Mat wshedMask = segmenter.process(image);
+    cv::Mat mask;
+    convertScaleAbs(wshedMask, mask, 1, 0);
+    double thresh = threshold(mask, mask, 1, 255, THRESH_BINARY);
+    bitwise_and(image, image, dest, mask);
+    dest.convertTo(dest,CV_8U);
 
-    namedWindow("Display Image", WINDOW_AUTOSIZE );
-    imshow("Display Image", image);
-
-    waitKey(0);
+    imshow("final_result", dest);
+    cv::waitKey(0);
 
     return 0;
 }
