@@ -3,6 +3,7 @@
 #include <opencv2/opencv.hpp>
 #include <Magick++.h>
 #include <string>
+#include <math.h>
 
 using namespace cv;
 using namespace std;
@@ -10,20 +11,14 @@ using namespace std;
 char name[50];
 int i = 2;
 Mat gray;
+std::vector<Mat> images;
 
 int main(){
 while(1){  
 
-    sprintf(name,"./images/20140822_144213_C1S0001%04d.tif",i);
+    sprintf(name,"./png_images/%04d.png",i);
+    Mat src= imread(name,1);
 
-
-    Magick::Image mimg;
-    mimg.read(name);
-    mimg.magick("png");
-    mimg.write("temp.png");
-    Mat src= imread("temp.png",1);
-
-    printf("name %s\n",name);
 
     if(!src.data ) break;
 
@@ -32,11 +27,24 @@ while(1){
     //imwrite(name, gray);
 
     //namedWindow("src");
-    imshow("src",src);
+    //imshow("src",src);
+    //threshold( gray, gray, 40, 255, 0);
+    images.push_back(src);
     //imshow("result",gray);
 
-    i++;
-   // waitKey(0);
+    i+=1;
+    //waitKey(0);
+}
+
+Mat sum = images[0];
+float x = 1.0;
+for (float k = 1; k < images.size(); k++){
+    float K = log2(k);
+    float factor = k/(k+1.0);
+    addWeighted( sum, factor, images[k], 1.0-factor, 0.0, sum);
+    printf("%4f, %f\n",k,factor);
+    imshow("sum",sum);
+    waitKey(0);
 }
 
 return 0;

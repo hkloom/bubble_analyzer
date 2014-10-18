@@ -1,82 +1,78 @@
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include <stdlib.h>
 #include <stdio.h>
-#include <iostream>
-#include <opencv2/opencv.hpp>
-#include <Magick++.h>
-#include <string>
 
 using namespace cv;
-using namespace std;
-using namespace Magick;
 
-class WatershedSegmenter{
-private:
-    Mat markers;
-public:
-    void setMarkers(cv::Mat& markerImage)
-    {
-        markerImage.convertTo(markers, CV_32S);
-    }
+/// Global variables
 
-    Mat process(Mat &image)
-    {
-        watershed(image, markers);
-        markers.convertTo(markers,CV_8U);
-        return markers;
-    }
-};
+int threshold_value = 0;
+int threshold_type = 3;;
+int const max_value = 255;
+int const max_type = 4;
+int const max_BINARY_value = 255;
 
-int main(int argc, char** argv ){
+Mat src, src_gray, dst;
+char* window_name = "Threshold Demo";
 
-    if ( argc != 2 )
-    {
-        printf("usage: DisplayImage.out <Image_Path>\n");
-        return -1;
-    }
+char* trackbar_type = "Type: \n 0: Binary \n 1: Binary Inverted \n 2: Truncate \n 3: To Zero \n 4: To Zero Inverted";
+char* trackbar_value = "Value";
 
-    Magick::Image mimg;
-    mimg.read(argv[1]);
-    mimg.magick("png"); // set the "format" attribute of my_image to PNG
-    mimg.write("temp.png");
-    Mat image, gray, imgGray, ret;
-    image = imread("temp.png", 1);
-    cv::Mat blank(image.size(),CV_8U,cv::Scalar(0xFF));
-    cv::Mat dest;
+/// Function headers
+void Threshold_Demo( int, void* );
 
-    if ( !image.data )
-    {
-        printf("No image data \n");
-        return -1;
-    }
-    // Create markers image
-    cv::Mat markers(image.size(),CV_8U,cv::Scalar(-1));
-    //Rect(topleftcornerX, topleftcornerY, width, height);
-    //top rectangle
-    markers(Rect(0,0,image.cols, 5)) = Scalar::all(1);
-    //bottom rectangle
-    markers(Rect(0,image.rows-5,image.cols, 5)) = Scalar::all(1);
-    //left rectangle
-    markers(Rect(0,0,5,image.rows)) = Scalar::all(1);
-    //right rectangle
-    markers(Rect(image.cols-5,0,5,image.rows)) = Scalar::all(1);
-    //centre rectangle
-    int centreW = image.cols/4;
-    int centreH = image.rows/4;
-    markers(Rect((image.cols/2)-(centreW/2),(image.rows/2)-(centreH/2), centreW, centreH)) = Scalar::all(2);
-    markers.convertTo(markers,CV_BGR2GRAY);
-    imshow("markers", markers);
+/**
+ * @function main
+ */
+int main( int argc, char** argv )
+{
+  /// Load an image
+  src = imread( argv[1], 1 );
 
-    //Create watershed segmentation object
-    WatershedSegmenter segmenter;
-    segmenter.setMarkers(markers);
-    cv::Mat wshedMask = segmenter.process(image);
-    cv::Mat mask;
-    convertScaleAbs(wshedMask, mask, 1, 0);
-    double thresh = threshold(mask, mask, 1, 255, THRESH_BINARY);
-    bitwise_and(image, image, dest, mask);
-    dest.convertTo(dest,CV_8U);
+  /// Convert the image to Gray
+  cvtColor( src, src_gray, CV_RGB2GRAY );
 
-    imshow("final_result", dest);
-    cv::waitKey(0);
+  /// Create a window to display results
+  namedWindow( window_name, CV_WINDOW_AUTOSIZE );
 
-    return 0;
+  /// Create Trackbar to choose type of Threshold
+  createTrackbar( trackbar_type,
+                  window_name, &threshold_type,
+                  max_type, Threshold_Demo );
+
+  createTrackbar( trackbar_value,
+                  window_name, &threshold_value,
+                  max_value, Threshold_Demo );
+
+  /// Call the function to initialize
+  Threshold_Demo( 0, 0 );
+
+  /// Wait until user finishes program
+  while(true)
+  {
+    int c;
+    c = waitKey( 20 );
+    if( (char)c == 27 )
+      { break; }
+   }
+
+}
+
+
+/**
+ * @function Threshold_Demo
+ */
+void Threshold_Demo( int, void* )
+{
+  /* 0: Binary
+     1: Binary Inverted
+     2: Threshold Truncated
+     3: Threshold to Zero
+     4: Threshold to Zero Inverted
+   */
+
+  threshold( src_gray, dst, threshold_value, max_BINARY_value,threshold_type );
+
+  imshow( window_name, dst );
 }
