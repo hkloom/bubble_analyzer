@@ -66,7 +66,7 @@ threshold( sum, sum, 80, 255, 0);
         params.minThreshold = 40;
         params.maxThreshold = 60;
         params.thresholdStep = 5;
-        params.minArea = 1; 
+        params.minArea = 5; 
         params.minConvexity = 0.3;
         params.minInertiaRatio = 0.01;
         params.minDistBetweenBlobs = 5;
@@ -86,17 +86,10 @@ threshold( sum, sum, 80, 255, 0);
         {
                 blobDetector.detect( sum, keyPoints);
                 //blobDetector.detectEx( src, keyPoints, contours );
-                drawKeypoints( sum, keyPoints, out, CV_RGB(0,255,0), DrawMatchesFlags::DEFAULT);
+                drawKeypoints( sum, keyPoints, out, CV_RGB(0,keyPoints.size(),0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+                //approxContours.resize( contours.size() );
 
-                contours = findContours(sum, contours);
-                approxContours.resize( contours.size() );
 
-                for( int i = 0; i < contours.size(); ++i )
-                {
-                        approxPolyDP( Mat(contours[i]), approxContours[i], 4, 1 );
-                        drawContours( out, contours, i, CV_RGB(rand()&255, rand()&255, rand()&255) );
-                        drawContours( out, approxContours, i, CV_RGB(rand()&255, rand()&255, rand()&255) );
-                }
                 cout << "Keypoints " << keyPoints.size() << endl;
         
                 imshow( wndNameOut, out );
