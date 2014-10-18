@@ -29,7 +29,7 @@ while(1){
 
     //namedWindow("src");
     //imshow("src",src);
-    //threshold( gray, gray, 40, 255, 0);
+    threshold( newsrc, newsrc, 50, 255, 0);
     images.push_back(newsrc);
     //imshow("result",gray);
 
@@ -44,9 +44,66 @@ for (float k = 1; k < images.size(); k++){
     float factor = k/(k+1.0);
     addWeighted( sum, factor, images[k], 1.0-factor, 0.0, sum);
     printf("%4f, %f\n",k,factor);
-    imshow("sum",sum);
-    waitKey(0);
+   
 }
+
+threshold( sum, sum, 80, 255, 0);
+ imshow("sum",sum);
+    waitKey(0);
+
+    const char      * wndName = "Source image",
+                                * wndNameGray = "Gray img", 
+                                * wndNameOut = "Out",
+                                * filename = "../data/images/eyebrows-smoothed.bmp";
+
+        Mat src, gray, thresh, binary;
+        Mat out = sum;
+        vector<KeyPoint> keyPoints;
+        vector< vector <Point> > contours;
+        vector< vector <Point> > approxContours;
+
+        SimpleBlobDetector::Params params;
+        params.minThreshold = 40;
+        params.maxThreshold = 60;
+        params.thresholdStep = 5;
+        params.minArea = 1; 
+        params.minConvexity = 0.3;
+        params.minInertiaRatio = 0.01;
+        params.minDistBetweenBlobs = 5;
+        params.maxArea = 8000;
+        params.maxConvexity = 10;
+        params.filterByCircularity = false;
+        params.filterByColor = false;
+        namedWindow( wndNameOut, CV_GUI_NORMAL );
+
+        src = imread( filename, CV_LOAD_IMAGE_GRAYSCALE );
+        line( sum, Point(0, sum.rows-1), Point( sum.cols-1, sum.rows-1 ), Scalar::all(255) );
+
+        SimpleBlobDetector blobDetector( params );
+        blobDetector.create("SimpleBlob");
+
+        for(;;)
+        {
+                blobDetector.detect( sum, keyPoints);
+                //blobDetector.detectEx( src, keyPoints, contours );
+                drawKeypoints( sum, keyPoints, out, CV_RGB(0,255,0), DrawMatchesFlags::DEFAULT);
+
+                contours = findContours(sum, contours);
+                approxContours.resize( contours.size() );
+
+                for( int i = 0; i < contours.size(); ++i )
+                {
+                        approxPolyDP( Mat(contours[i]), approxContours[i], 4, 1 );
+                        drawContours( out, contours, i, CV_RGB(rand()&255, rand()&255, rand()&255) );
+                        drawContours( out, approxContours, i, CV_RGB(rand()&255, rand()&255, rand()&255) );
+                }
+                cout << "Keypoints " << keyPoints.size() << endl;
+        
+                imshow( wndNameOut, out );
+                waitKey(0);
+        }
+
+
 
 return 0;
 }
