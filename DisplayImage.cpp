@@ -6,8 +6,10 @@
 using namespace cv;
 using namespace std;
 
-Mat src; Mat src_gray;
+Mat src; Mat src_gray; Mat mutated;
 int thresh = 100;
+char name[50];
+int i = 2;
 int max_thresh = 255;
 RNG rng(12345);
 
@@ -18,7 +20,9 @@ void thresh_callback(int, void* );
 int main( int argc, char** argv )
 {
   /// Load source image and convert it to gray
-  src = imread( argv[1], 1 );
+  while(1){  
+        sprintf(name,"./png_images/%04d.png",i);
+  src = imread( name, 1 );
 
   /// Convert image to gray and blur it
   cvtColor( src, src_gray, CV_BGR2GRAY );
@@ -29,14 +33,34 @@ int main( int argc, char** argv )
   char* source_window = "Source";
   namedWindow( source_window, CV_WINDOW_AUTOSIZE );
   imshow( source_window, src_gray);
-  waitKey(0);
+  //waitKey(0);
+
+
+  Mat element = getStructuringElement( MORPH_ELLIPSE,
+                                       Size( 5, 5 ),
+                                       Point( 2, 2 ) );
+  Mat element2 = getStructuringElement( MORPH_ELLIPSE,
+                                       Size( 4, 4 ),
+                                       Point( 2, 2 ) );
+  /// Apply the dilation operation
+  erode( src_gray, src_gray, element );
+  dilate( src_gray, src_gray, element2 );
+  dilate( src_gray, src_gray, element );
+  erode( src_gray, src_gray, element2 );
+
+  imshow("dilated",src_gray);
+  //waitKey(0);
 
   createTrackbar( " Canny thresh:", "Source", &thresh, max_thresh, thresh_callback );
   thresh_callback( 0, 0 );
 
   waitKey(0);
+  i++;
+}
+
   return(0);
 }
+
 
 /** @function thresh_callback */
 void thresh_callback(int, void* )
@@ -54,9 +78,9 @@ void thresh_callback(int, void* )
   Mat drawing = Mat::zeros( canny_output.size(), CV_8UC3 );
   for( int i = 0; i< contours.size(); i++ )
      {
-       Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+       Scalar color = Scalar( 255, 255, 0 );
        drawContours( drawing, contours, i, color, 2, 8, hierarchy, 0, Point() );
-       cout << "area:  " << contourArea(contours[i]) << endl;
+      // cout << "area:  " << contourArea(contours[i]) << endl;
      }
 
   /// Show in a window
