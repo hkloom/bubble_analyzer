@@ -23,6 +23,7 @@ int main( int argc, char** argv )
   while(1){  
         sprintf(name,"./png_images/%04d.png",i);
   src = imread( name, 1 );
+  if(!src.data ) break;
   src = src(Rect(92,48,640,320));
 
   /// Convert image to gray and blur it
@@ -54,8 +55,8 @@ int main( int argc, char** argv )
 
   createTrackbar( " Canny thresh:", "Source", &thresh, max_thresh, thresh_callback );
   thresh_callback( 0, 0 );
-
-  waitKey(0);
+  cout << i << endl;
+  waitKey(10);
   i++;
 }
 
@@ -79,9 +80,14 @@ void thresh_callback(int, void* )
   Mat drawing = Mat::zeros( canny_output.size(), CV_8UC3 );
   for( int i = 0; i< contours.size(); i++ )
      {
-       Scalar color = Scalar( 255, 100, 80 );
-       drawContours( drawing, contours, i, color, CV_FILLED, 8, hierarchy, 0, Point() );
-      // cout << "area:  " << contourArea(contours[i]) << endl;
+       Scalar purple = Scalar( 255, 100, 80 );
+        Scalar red = Scalar( 100, 100, 255 );
+       if (contourArea(contours[i]) > 600){
+            cout << "area:  " << contourArea(contours[i]) << endl;
+            drawContours( drawing, contours, i, red, CV_FILLED, 8, hierarchy, 0, Point() );
+          }else{
+            drawContours( drawing, contours, i, purple, CV_FILLED, 8, hierarchy, 0, Point() );
+          }
      }
 
 
