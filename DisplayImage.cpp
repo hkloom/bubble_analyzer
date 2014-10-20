@@ -7,6 +7,7 @@ using namespace cv;
 using namespace std;
 
 Mat src; Mat src_gray; Mat mutated;
+vector<KeyPoint> keyPoints2;
 int thresh = 100;
 char name[50];
 int i = 2;
@@ -19,6 +20,9 @@ void thresh_callback(int, void* );
 /** @function main */
 int main( int argc, char** argv )
 {
+  cv::FileStorage store("template.bin", cv::FileStorage::READ);
+  cv::FileNode n1 = store["keypoints"];
+  cv::read(n1,keyPoints2);
   /// Load source image and convert it to gray
   while(1){  
         sprintf(name,"./png_images/%04d.png",i);
@@ -55,8 +59,8 @@ int main( int argc, char** argv )
 
   createTrackbar( " Canny thresh:", "Source", &thresh, max_thresh, thresh_callback );
   thresh_callback( 0, 0 );
-  cout << i << endl;
-  waitKey(10);
+  //cout << i << endl;
+  waitKey(5);
   i++;
 }
 
@@ -83,7 +87,7 @@ void thresh_callback(int, void* )
        Scalar purple = Scalar( 255, 100, 80 );
         Scalar red = Scalar( 100, 100, 255 );
        if (contourArea(contours[i]) > 600){
-            cout << "area:  " << contourArea(contours[i]) << endl;
+            //cout << "area:  " << contourArea(contours[i]) << endl;
             drawContours( drawing, contours, i, red, CV_FILLED, 8, hierarchy, 0, Point() );
           }else{
             drawContours( drawing, contours, i, purple, CV_FILLED, 8, hierarchy, 0, Point() );
@@ -116,6 +120,19 @@ void thresh_callback(int, void* )
     }
     cout << "}"; */
     drawKeypoints( drawing, keyPoints, drawing, CV_RGB(255,255,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+
+    //KDTree kdtree = KDTree(keyPoints);
+    //vector <Point> ns3;
+    //kdtree.findNearest(keyPoints2,2,5, ns3);
+
+    /*
+  */
+
+
+
+
+    drawKeypoints( drawing, keyPoints2, drawing, CV_RGB(0,255,0), 1);
+
                 //approxContours.resize( contours.size() );
 
 

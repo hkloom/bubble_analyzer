@@ -103,17 +103,21 @@ int main(){
     points = keyPoints;
     imwrite("results/average_keypoints.png", out);
 
+    cv::FileStorage store("template.bin", cv::FileStorage::WRITE);
+    cv::write(store,"keypoints",keyPoints);
+    store.release();
 
-    vector < vector <Point2f> > contour;
-    vector<Vec4i> hierarchy;
+
+    //vector < vector <Point2f> > contour;
+    //vector<Vec4i> hierarchy;
     //findContours( sum, contour, CV_RETR_TREE, CV_CHAIN_APPROX_TC89_L1);
-    cout << "{";
+    //cout << "{";
     //cout << contourArea(contour[0]) << endl;
-    for (i = 1; i < contour.size(); i++){
-        cout << ", " << contourArea(contour[i]) << endl;
+    //for (i = 1; i < contour.size(); i++){
+        //cout << ", " << contourArea(contour[i]) << endl;
         //drawContours( out, contour, i, Scalar(255,0,0), 2, 8, hierarchy, 0, Point() );
-    }
-    cout << "}";
+    //}
+    //cout << "}";
 
     imshow( "Out", out);
     waitKey(0);
