@@ -14,6 +14,12 @@ int i = 2;
 int max_thresh = 255;
 RNG rng(12345);
 
+float euclideanDistSqrd(Point2f& p, Point2f& q) {
+    Point2f diff = p - q;
+    return diff.x*diff.x + diff.y*diff.y;
+}
+
+
 /// Function header
 void thresh_callback(int, void* );
 
@@ -59,8 +65,8 @@ int main( int argc, char** argv )
 
   createTrackbar( " Canny thresh:", "Source", &thresh, max_thresh, thresh_callback );
   thresh_callback( 0, 0 );
-  //cout << i << endl;
-  waitKey(5);
+  cout << i << endl;
+  waitKey(10);
   i++;
 }
 
@@ -128,9 +134,31 @@ void thresh_callback(int, void* )
     /*
   */
 
+    /// Get the moments
+    vector<Moments> mu(contours.size() ); 
+    for( int i = 0; i < contours.size(); i++ )
+    { mu[i] = moments( contours[i], false ); }
+
+    ///  Get the mass centers:
+    vector<Point2f> mc( contours.size() );
+    for( int i = 0; i < contours.size(); i++ )
+    { mc[i] = Point2f( mu[i].m10/mu[i].m00 , mu[i].m01/mu[i].m00 ); } 
+   //cout << keyPoints.size() << " -- " << keyPoints2.size() << endl;
 
 
-
+    //dumb and slow O(n^2) algorithm
+    //need to replace with quadtree or something like that
+    for (int k = 0; k < keyPoints2.size(); k++){
+      for (int j = 0; j<mc.size();j++){
+          float d = euclideanDistSqrd(keyPoints2[k].pt, mc[j]);
+          if (d < 100){
+            cout << d << endl;
+            drawContours( drawing, contours, j,  Scalar( 255, 255, 255 ), CV_FILLED, 8, hierarchy, 0, Point() );
+          }
+          //break;
+      }
+    }
+  
     drawKeypoints( drawing, keyPoints2, drawing, CV_RGB(0,255,0), 1);
 
                 //approxContours.resize( contours.size() );
