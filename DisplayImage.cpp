@@ -10,7 +10,7 @@ Mat src; Mat src_gray; Mat mutated;
 vector<KeyPoint> keyPoints2;
 int thresh = 100;
 char name[50];
-int i = 2;
+int i = 1;
 int max_thresh = 255;
 RNG rng(12345);
 
@@ -30,6 +30,7 @@ int main( int argc, char** argv )
   cv::FileNode n1 = store["keypoints"];
   cv::read(n1,keyPoints2);
   /// Load source image and convert it to gray
+
   while(1){  
         sprintf(name,"./png_images/%04d.png",i);
   src = imread( name, 1 );
@@ -44,7 +45,7 @@ int main( int argc, char** argv )
   /// Create Window
   char* source_window = "Source";
   namedWindow( source_window, CV_WINDOW_AUTOSIZE );
-  imshow( source_window, src_gray);
+  imshow( source_window, src);
   //waitKey(0);
 
 
@@ -65,7 +66,6 @@ int main( int argc, char** argv )
 
   createTrackbar( " Canny thresh:", "Source", &thresh, max_thresh, thresh_callback );
   thresh_callback( 0, 0 );
-  cout << i << endl;
   waitKey(10);
   i++;
 }
@@ -86,19 +86,7 @@ void thresh_callback(int, void* )
   /// Find contours
   findContours( canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
 
-  /// Draw contours
-  Mat drawing = Mat::zeros( canny_output.size(), CV_8UC3 );
-  for( int i = 0; i< contours.size(); i++ )
-     {
-       Scalar purple = Scalar( 255, 100, 80 );
-        Scalar red = Scalar( 100, 100, 255 );
-       if (contourArea(contours[i]) > 600){
-            //cout << "area:  " << contourArea(contours[i]) << endl;
-            drawContours( drawing, contours, i, red, CV_FILLED, 8, hierarchy, 0, Point() );
-          }else{
-            drawContours( drawing, contours, i, purple, CV_FILLED, 8, hierarchy, 0, Point() );
-          }
-     }
+
 
 
      vector<KeyPoint> keyPoints;
@@ -125,14 +113,11 @@ void thresh_callback(int, void* )
         cout << ", " << keyPoints[i].pt;
     }
     cout << "}"; */
-    drawKeypoints( drawing, keyPoints, drawing, CV_RGB(255,255,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    //drawKeypoints( drawing, keyPoints, drawing, CV_RGB(255,255,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
 
     //KDTree kdtree = KDTree(keyPoints);
     //vector <Point> ns3;
     //kdtree.findNearest(keyPoints2,2,5, ns3);
-
-    /*
-  */
 
     /// Get the moments
     vector<Moments> mu(contours.size() ); 
@@ -145,28 +130,58 @@ void thresh_callback(int, void* )
     { mc[i] = Point2f( mu[i].m10/mu[i].m00 , mu[i].m01/mu[i].m00 ); } 
    //cout << keyPoints.size() << " -- " << keyPoints2.size() << endl;
 
-
+    Mat drawing = Mat::zeros( canny_output.size(), CV_8UC3 );
+    if (i==1){
+      cout << "frame";
+    for (int k = 0; k < keyPoints2.size(); k++){
+      cout << ",divet" << k;
+    }
+    cout << endl;
+    } 
+    cout << i;
     //dumb and slow O(n^2) algorithm
     //need to replace with quadtree or something like that
     for (int k = 0; k < keyPoints2.size(); k++){
-      for (int j = 0; j<mc.size();j++){
+      cout<<",";
+          for (int j = 0; j<mc.size();j++){
+            //cout << ",";
           float d = euclideanDistSqrd(keyPoints2[k].pt, mc[j]);
-          if (d < 100){
-            cout << d << endl;
-            drawContours( drawing, contours, j,  Scalar( 255, 255, 255 ), CV_FILLED, 8, hierarchy, 0, Point() );
+          int area = contourArea(contours[j]);
+
+          if (area > 600){
+              drawContours( drawing, contours, j,  Scalar( 0, 0, 255 ), CV_FILLED, 8, hierarchy, 0, Point() );
+          }else if (d > 50 && area < 600){
+              //drawContours( drawing, contours, j,  Scalar( 255, 100, 0 ), CV_FILLED, 8, hierarchy, 0, Point() );
+          }
+          if (d < 50 && area < 600){
+            //if (k==30) cout << "point: " << k << " --- " << area << endl;
+            cout <<area;
+            drawContours( src, contours, j,  Scalar( 0, 0, 255 ), 1, 8, hierarchy, 0, Point() );
+            break;
           }
           //break;
       }
     }
-  
-    drawKeypoints( drawing, keyPoints2, drawing, CV_RGB(0,255,0), 1);
+
+    /*
+      /// Draw contours
+  for( int i = 0; i< contours.size(); i++ )
+     {
+      
+       if (contourArea(contours[i]) > 600){
+            //cout << "area:  " << contourArea(contours[i]) << endl;
+          }else{
+            drawContours( drawing, contours, i, purple, CV_FILLED, 8, hierarchy, 0, Point() );
+          }
+     }
+    */
+    //drawKeypoints( drawing, keyPoints2, drawing, CV_RGB(0,255,0), 1);
 
                 //approxContours.resize( contours.size() );
+         cout << endl;
 
-
-
-
-  /// Show in a window
+  namedWindow( "Process", CV_WINDOW_AUTOSIZE );
+  imshow( "Process", drawing );
   namedWindow( "Contours", CV_WINDOW_AUTOSIZE );
-  imshow( "Contours", drawing );
+  imshow( "Contours", src );
 }
