@@ -23,6 +23,7 @@ int main( int argc, char** argv )
   while(1){  
         sprintf(name,"./png_images/%04d.png",i);
   src = imread( name, 1 );
+  src = src(Rect(92,48,640,320));
 
   /// Convert image to gray and blur it
   cvtColor( src, src_gray, CV_BGR2GRAY );
@@ -43,9 +44,9 @@ int main( int argc, char** argv )
                                        Size( 4, 4 ),
                                        Point( 2, 2 ) );
   /// Apply the dilation operation
-  erode( src_gray, src_gray, element );
+  //erode( src_gray, src_gray, element );
+  //dilate( src_gray, src_gray, element2 );
   dilate( src_gray, src_gray, element2 );
-  dilate( src_gray, src_gray, element );
   erode( src_gray, src_gray, element2 );
 
   imshow("dilated",src_gray);
@@ -78,10 +79,41 @@ void thresh_callback(int, void* )
   Mat drawing = Mat::zeros( canny_output.size(), CV_8UC3 );
   for( int i = 0; i< contours.size(); i++ )
      {
-       Scalar color = Scalar( 255, 255, 0 );
-       drawContours( drawing, contours, i, color, 2, 8, hierarchy, 0, Point() );
+       Scalar color = Scalar( 255, 100, 80 );
+       drawContours( drawing, contours, i, color, CV_FILLED, 8, hierarchy, 0, Point() );
       // cout << "area:  " << contourArea(contours[i]) << endl;
      }
+
+
+     vector<KeyPoint> keyPoints;
+    SimpleBlobDetector::Params params;
+        params.minThreshold = 40;
+        params.maxThreshold = 60;
+        params.thresholdStep = 5;
+        params.minArea = 5; 
+        params.minConvexity = 0.3;
+        params.minInertiaRatio = 0.01;
+        params.minDistBetweenBlobs = 5;
+        params.maxArea = 8000;
+        params.maxConvexity = 10;
+        params.filterByCircularity = false;
+        params.filterByColor = false;
+      //line( sum, Point(0, sum.rows-1), Point( sum.cols-1, sum.rows-1 ), Scalar::all(255) );
+
+    SimpleBlobDetector blobDetector( params );
+    //blobDetector.create("SimpleBlob");
+    blobDetector.detect( src_gray, keyPoints);
+    /*cout << "{";
+    cout << keyPoints[0].pt;
+    for (i = 1; i < keyPoints.size(); i++){
+        cout << ", " << keyPoints[i].pt;
+    }
+    cout << "}"; */
+    drawKeypoints( drawing, keyPoints, drawing, CV_RGB(255,255,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+                //approxContours.resize( contours.size() );
+
+
+
 
   /// Show in a window
   namedWindow( "Contours", CV_WINDOW_AUTOSIZE );
