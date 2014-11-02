@@ -14,13 +14,15 @@ int i = 1;
 int max_thresh = 255;
 RNG rng(12345);
 
+
+
+//gets the square of the distance between two points
 float euclideanDistSqrd(Point2f& p, Point2f& q) {
     Point2f diff = p - q;
     return diff.x*diff.x + diff.y*diff.y;
 }
 
-
-/// Function header
+//callback function for slider
 void thresh_callback(int, void* );
 
 /** @function main */
@@ -32,43 +34,46 @@ int main( int argc, char** argv )
   /// Load source image and convert it to gray
 
   while(1){  
-        sprintf(name,"./png_images/%04d.png",i);
-  src = imread( name, 1 );
-  if(!src.data ) break;
-  src = src(Rect(92,48,640,320));
+    sprintf(name,"./png_images/%04d.png",i);
+    src = imread( name, 1 );
+    if(!src.data ) break;
+    src = src(Rect(92,48,640,320));
 
   /// Convert image to gray and blur it
-  cvtColor( src, src_gray, CV_BGR2GRAY );
-  blur( src_gray, src_gray, Size(3,3) );
-  threshold( src_gray, src_gray, 50, 255, CV_ADAPTIVE_THRESH_MEAN_C);
+    cvtColor( src, src_gray, CV_BGR2GRAY );
+
+
+  //normalize?
+
+    blur( src_gray, src_gray, Size(3,3) );
+    threshold( src_gray, src_gray, 50, 255, CV_ADAPTIVE_THRESH_MEAN_C);
 
   /// Create Window
-  char* source_window = "Source";
-  namedWindow( source_window, CV_WINDOW_AUTOSIZE );
-  imshow( source_window, src);
+    char* source_window = "Source";
+    namedWindow( source_window, CV_WINDOW_AUTOSIZE );
+    imshow( source_window, src);
   //waitKey(0);
 
 
-  Mat element = getStructuringElement( MORPH_ELLIPSE,
-                                       Size( 5, 5 ),
-                                       Point( 2, 2 ) );
-  Mat element2 = getStructuringElement( MORPH_ELLIPSE,
-                                       Size( 4, 4 ),
-                                       Point( 2, 2 ) );
-  /// Apply the dilation operation
+    Mat element = getStructuringElement( MORPH_ELLIPSE,
+     Size( 5, 5 ),
+     Point( 2, 2 ) );
+    Mat element2 = getStructuringElement( MORPH_ELLIPSE,
+     Size( 4, 4 ),
+     Point( 2, 2 ) );
+
+  /// Apply the dilation and erosion operation
+  //to get rid of holes and other noise
   //erode( src_gray, src_gray, element );
   //dilate( src_gray, src_gray, element2 );
-  dilate( src_gray, src_gray, element2 );
-  erode( src_gray, src_gray, element2 );
-
-  imshow("dilated",src_gray);
-  //waitKey(0);
-
-  createTrackbar( " Canny thresh:", "Source", &thresh, max_thresh, thresh_callback );
-  thresh_callback( 0, 0 );
-  waitKey(10);
-  i++;
-}
+    dilate( src_gray, src_gray, element2 );
+    erode( src_gray, src_gray, element2 );
+    imshow("dilated",src_gray);
+    createTrackbar( " Canny thresh:", "Source", &thresh, max_thresh, thresh_callback );
+    thresh_callback( 0, 0 );
+    waitKey(10);
+    i++;
+  }
 
   return(0);
 }
@@ -102,22 +107,9 @@ void thresh_callback(int, void* )
         params.maxConvexity = 10;
         params.filterByCircularity = false;
         params.filterByColor = false;
-      //line( sum, Point(0, sum.rows-1), Point( sum.cols-1, sum.rows-1 ), Scalar::all(255) );
 
     SimpleBlobDetector blobDetector( params );
-    //blobDetector.create("SimpleBlob");
     blobDetector.detect( src_gray, keyPoints);
-    /*cout << "{";
-    cout << keyPoints[0].pt;
-    for (i = 1; i < keyPoints.size(); i++){
-        cout << ", " << keyPoints[i].pt;
-    }
-    cout << "}"; */
-    //drawKeypoints( drawing, keyPoints, drawing, CV_RGB(255,255,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-
-    //KDTree kdtree = KDTree(keyPoints);
-    //vector <Point> ns3;
-    //kdtree.findNearest(keyPoints2,2,5, ns3);
 
     /// Get the moments
     vector<Moments> mu(contours.size() ); 
@@ -128,57 +120,72 @@ void thresh_callback(int, void* )
     vector<Point2f> mc( contours.size() );
     for( int i = 0; i < contours.size(); i++ )
     { mc[i] = Point2f( mu[i].m10/mu[i].m00 , mu[i].m01/mu[i].m00 ); } 
-   //cout << keyPoints.size() << " -- " << keyPoints2.size() << endl;
 
     Mat drawing = Mat::zeros( canny_output.size(), CV_8UC3 );
     if (i==1){
       cout << "frame";
     for (int k = 0; k < keyPoints2.size(); k++){
-      cout << ",divet" << k;
+      if (!(keyPoints2[k].pt.x < 20 || keyPoints2[k].pt.x > 620 || keyPoints2[k].pt.y < 20 || keyPoints2[k].pt.y > 300)){
+        cout << ",divet" << k;
+      }
     }
     cout << endl;
     } 
     cout << i;
-    //dumb and slow O(n^2) algorithm
-    //need to replace with quadtree or something like that
-    for (int k = 0; k < keyPoints2.size(); k++){
-      cout<<",";
-          for (int j = 0; j<mc.size();j++){
-            //cout << ",";
-          float d = euclideanDistSqrd(keyPoints2[k].pt, mc[j]);
-          int area = contourArea(contours[j]);
 
-          if (area > 600){
-              drawContours( drawing, contours, j,  Scalar( 0, 0, 255 ), CV_FILLED, 8, hierarchy, 0, Point() );
-          }else if (d > 50 && area < 600){
-              //drawContours( drawing, contours, j,  Scalar( 255, 100, 0 ), CV_FILLED, 8, hierarchy, 0, Point() );
-          }
-          if (d < 50 && area < 600){
-            //if (k==30) cout << "point: " << k << " --- " << area << endl;
-            cout <<area;
-            drawContours( src, contours, j,  Scalar( 0, 0, 255 ), 1, 8, hierarchy, 0, Point() );
-            break;
-          }
-          //break;
+
+    /// Approximate contours to polygons + get bounding rects and circles
+    vector<vector<Point> > contours_poly( contours.size() );
+    vector<Point2f>center( contours.size() );
+    vector<float>radius( contours.size() );
+
+    for( int i = 0; i < contours.size(); i++ )
+       { approxPolyDP( Mat(contours[i]), contours_poly[i], 3, true );
+         minEnclosingCircle( (Mat)contours_poly[i], center[i], radius[i] );
+       }
+
+
+    /// Draw polygonal contour + bonding rects + circles
+    for( int i = 0; i< contours.size(); i++ )
+       {
+         Scalar color = Scalar( 255, 255, 255 );
+         //drawContours( drawing, contours_poly, i, color, 1, 8, vector<Vec4i>(), 0, Point() );
+         circle( drawing, center[i], (int)radius[i], color, 2, 8, 0 );
+       }
+
+
+
+
+
+
+    //dumb and slow O(n^2) algorithm
+    //need to replace with quadtree, kdtree or something like that
+    for (int k = 0; k < keyPoints2.size(); k++){
+      if (!(keyPoints2[k].pt.x < 20 || keyPoints2[k].pt.x > 620 || keyPoints2[k].pt.y < 20 || keyPoints2[k].pt.y > 300)){
+        cout<<",";
+            for (int j = 0; j<mc.size();j++){
+              //cout << ",";
+            float d = euclideanDistSqrd(keyPoints2[k].pt, mc[j]);
+            //int area = contourArea(contours[j]);
+            //cout << "radius = " << radius[j] << endl;
+            float area = radius[j]*radius[j]*3.1415;
+            if (radius[j] > 16 || radius[j] <= 1){
+                drawContours( drawing, contours, j,  Scalar( 0, 0, 255 ), CV_FILLED, 8, hierarchy, 0, Point() );
+            }else if (d > 50){
+                drawContours( drawing, contours, j,  Scalar( 255, 100, 0 ), CV_FILLED, 8, hierarchy, 0, Point() );
+            }
+            else if (area < 800 && d <= 50){
+              //if (k==30) cout << "point: " << k << " --- " << area << endl;
+              cout <<area;
+              drawContours( src, contours, j,  Scalar( 255, 255, 255 ), CV_FILLED, 8, hierarchy, 0, Point() );
+              circle( src, center[j], (int)radius[j], Scalar( 0, 255, 255 ), 2, 8, 0 );
+              break;
+            }
+            //break;
+        }
       }
     }
-
-    /*
-      /// Draw contours
-  for( int i = 0; i< contours.size(); i++ )
-     {
-      
-       if (contourArea(contours[i]) > 600){
-            //cout << "area:  " << contourArea(contours[i]) << endl;
-          }else{
-            drawContours( drawing, contours, i, purple, CV_FILLED, 8, hierarchy, 0, Point() );
-          }
-     }
-    */
-    //drawKeypoints( drawing, keyPoints2, drawing, CV_RGB(0,255,0), 1);
-
-                //approxContours.resize( contours.size() );
-         cout << endl;
+  cout << endl;
 
   namedWindow( "Process", CV_WINDOW_AUTOSIZE );
   imshow( "Process", drawing );
